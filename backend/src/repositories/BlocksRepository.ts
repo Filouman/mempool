@@ -1401,6 +1401,7 @@ class BlocksRepository {
       const blocksToMigrate = rows.length;
 
       let timer = Date.now() / 1000;
+      let lastBlocksMigrated = 0;
       const startedAt = Date.now() / 1000;
 
       for (const row of rows) {
@@ -1421,16 +1422,18 @@ class BlocksRepository {
           [feeStats.medianFee, JSON.stringify(feeStats.feeRange), row.hash]
         );
 
+        blocksMigrated++;
+
         const elapsedSeconds = (Date.now() / 1000) - timer;
         if (elapsedSeconds > 5) {
           const runningFor = (Date.now() / 1000) - startedAt;
-          const blockPerSeconds = blocksMigrated / elapsedSeconds;
+          const blocksSinceLastLog = blocksMigrated - lastBlocksMigrated;
+          const blockPerSeconds = blocksSinceLastLog / elapsedSeconds;
           const progress = Math.round(blocksMigrated / blocksToMigrate * 10000) / 100;
           logger.debug(`Migrating blocks to version 1 | ~${blockPerSeconds.toFixed(2)} blocks/sec | height: ${row.height} | total: ${blocksMigrated}/${blocksToMigrate} (${progress}%) | elapsed: ${runningFor.toFixed(2)} seconds`);
           timer = Date.now() / 1000;
+          lastBlocksMigrated = blocksMigrated;
         }
-
-        blocksMigrated++;
       }
       logger.notice(`Migrating blocks to version 1 completed: migrated ${blocksMigrated} blocks`);
     } catch (e) {
